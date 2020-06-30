@@ -1,10 +1,31 @@
-This is the repository for application layer codes for end-to-end evaluation of Orca multicast system
+This is the repository for application layer codes for end-to-end evaluation of Orca multicast system.
+# Contents
 
-# Experiment Setup
+ - [Experimental Setup](#experimental-setup)
+ - [Codes and Dependencies](#codes-and-dependencies)
+ - [Configuration Instructions](#configuration-instructions)
+	 - [Hugepages](#hugepages)
+	 - [Configure network interfaces](#configure-network-interfaces)
+	 - [Configure docker network](#configure-docker-network)
+	 - [Program NetFPGAs](#program-netfpgas)
+	 - [Make a shared directory](#make-a-shared-directory)
+	 - [Build docker image](#build-docker-image)
+	 - [Set environment variables](#set-environment-variables)
+ - [Run Instructions](#run-instructions)
+	 - [Deploy](#deploy)
+	 - [Run Experiments](#run-experiments)
+	 - [Collect Results](#collect-results)
+ - [Plot Results](#plot-results)
+ - [Notes and Known Issues](#notes-and-known-issues)
+# Experimental Setup
 The report.pdf file in the docs folder contains detailed description of the experiments and implementation details. 
-Important figures also included here:
-[figures]
+Important figures also included here.
 
+**Topology of the current testbed**
+![!testbed topology](docs/testbed_topology.png)
+
+**Orca Agent Pipeline**
+![!Orca agent pipeline](docs/orca_agent_pipeline.png)
 # Codes and Dependencies
 ### Python Libraries
 The file *requirements.txt* provides the necessary libraries for running python scripts.
@@ -29,7 +50,9 @@ For ubuntu docker installation follow [this guide](https://docs.docker.com/engin
 ## Organization
 ### Codes
 Codes directory contains python scripts for server and client applications. 
-The "docker" sub-directory, contains the image for running multiple clients inside one host (check next section for instructions).
+
+### Docker
+The "docker" sub-directory, contains the image and required files for running multiple clients inside one host (check next section for instructions).
 
 ### deploy.py
 The deploy.py script uses Python *Fabric* for performing the necessary steps on the receiver machines from a centeralized machine. This code should be located at the server machine (currently cs-nsl-ramses).
@@ -148,7 +171,7 @@ sudo docker network create -d macvlan \
 --gateway=192.168.0.64 \
 -o parent=enp2s0f0 pub_net
 ```
-## Programming NetFPGAs
+## Program NetFPGAs
 Before running the experiments, NetFGPA (NF) should be programmed.
 For the multicast evaluations the NF switches should be programmed with the Orca bitfile and for unicast it is programmed with reference switch (L2 switch) bitfile.
 
@@ -174,7 +197,7 @@ sudo -E env "PATH=$PATH" xmd
 Inside the XMD CLI:
 ``` fpga -f reference_switch.bit```
 
-## Make the shared directory
+## Make a shared directory
 We share a path between the host and docker containers to enable unix domain socket communication. For using the default path (written in the dockerfile and client.py app) make this directory in each machine:
 
 ```
@@ -188,7 +211,7 @@ cd orca-application-evaluation/docker
 sudo docker build -t receiver .
 ```
 
-## Setting the environment variables
+## Set environment variables
 The BESS script will use these environment variables to know how many containers are running and the name of the containers. For each experiment set the desired value by adding these lines to ```~/.bashrc```: 
 ```
 export NUM_INSTANCES=2
@@ -308,14 +331,16 @@ sudo python server.py orca broadcast_files_0 5 1
 ```
 sudo python server.py udp broadcast_files_3 4 6
 ```
-## Collecting Results
+## Collect Results
 The server results for "App execution time" and send time of each file are stored in the specified folder (by default "'../results/ramses/'") in server.py script {line 13}.
 Results for each receiver inside the containers is stored in the directory with this format: 
 ```
 /var/run/sockets/results/container_*/
 ```
 
-## Plot Results
+# Plot Results
+The script plot_results.py will plot the metrics. All of the results should be under one directory with the name of the sub directories as: "56", "55", "ramses" and "42".
+The plot figures for the most recent evalutaions will be available in the report.pdf file.
 
+# Notes and Known Issues
 
-## Notes and Known Issues
