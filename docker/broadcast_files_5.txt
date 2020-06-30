@@ -1,0 +1,6 @@
+(lp0
+(S'broadcast_files_5/myfile'
+p1
+I1073741824
+tp2
+a.
