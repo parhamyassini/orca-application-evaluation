@@ -23,9 +23,11 @@ LINE_STYLES = ['-', '--', '-.', ':']
 
 # Font
 TEX_ENABLED = False
-TICK_FONT_SIZE = 20
-AXIS_FONT_SIZE = 20
-LEGEND_FONT_SIZE = 16
+TICK_FONT_SIZE = 24
+AXIS_FONT_SIZE = 24
+LEGEND_FONT_SIZE = 22
+
+FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
 
 DEFAULT_RC = {'lines.linewidth': DEFAULT_LINE_WIDTH,
               'axes.labelsize': AXIS_FONT_SIZE,
@@ -387,44 +389,55 @@ def plot_cdf_latency(path, exp='10g'):
     
     ticks = ['64', '128', '256', '512', '1024']
 
-    def set_box_color(bp, color):
-        plt.setp(bp['boxes'], color=color, linewidth=DEFAULT_LINE_WIDTH)
-        plt.setp(bp['whiskers'], color=color, linewidth=DEFAULT_LINE_WIDTH)
-        plt.setp(bp['caps'], color=color, linewidth=DEFAULT_LINE_WIDTH)
-        plt.setp(bp['medians'], color=color, linewidth=DEFAULT_LINE_WIDTH)
+    def set_box_color(bp, color, hatch=None):
+        plt.setp(bp['boxes'], linewidth=1)
+        plt.setp(bp['whiskers'], linewidth=1)
+        plt.setp(bp['caps'], linewidth=1)
+        plt.setp(bp['medians'], color='black', linewidth=1)
+        for patch in bp['boxes']:
+            patch.set_facecolor(color)
+            if hatch:
+                patch.set_hatch(hatch)
         #plt.setp(bp['fliers'], color=color, marker='+')
     
     sns.set_context(context='paper', rc=DEFAULT_RC)
     sns.set_style(style='ticks')
-    plt.rc('text', usetex=TEX_ENABLED)
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
     plt.rc('ps', **{'fonttype': 42})
     plt.rc('legend', handlelength=1., handletextpad=0.1)
-    plt.rcParams['text.latex.preamble'] = [r'\usepackage{sansmath}',r'\sansmath']
+    # plt.rcParams['text.latex.preamble'] = [r'\usepackage{sansmath}', r'\sansmath']
     #plt.rcParams['text.usetex'] = True
-    fig, ax = plt.subplots(figsize=(9, 5))
-    bpl = plt.boxplot(data_orca, positions=np.array(range(len(data_orca)))*2.0-0.3, sym='')
-    bpr = plt.boxplot(data_normal, positions=np.array(range(len(data_normal)))*2.0+0.3, sym = '')
-    set_box_color(bpl, color_pallete[0]) # colors are from http://colorbrewer2.org/
-    set_box_color(bpr, color_pallete[1])
+    # fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots()
+    bpl = plt.boxplot(data_orca, patch_artist=True, positions=np.array(range(len(data_orca)))*2.0-0.3, sym='')
+    bpr = plt.boxplot(data_normal, patch_artist=True, positions=np.array(range(len(data_normal)))*2.0+0.3, sym='')
+    set_box_color(bpl, color_pallete[0], hatch='xx') # colors are from http://colorbrewer2.org/
+    set_box_color(bpr, color_pallete[1], hatch='//')
 
     # draw temporary red and blue lines and use them to create a legend
-    plt.plot([], c=color_pallete[0], label=' Orca')
-    plt.plot([], c=color_pallete[1], label=' Network-based multicast')
-    plt.legend()
+    # plt.plot([], c=color_pallete[0], label='Orca')
+    # plt.plot([], c=color_pallete[1], label='Network-based Multicast')
+    # plt.legend()
+    ax.legend((bpl['boxes'][0], bpr['boxes'][0]), ('Orca', 'Network-based Multicast'))
+
     plt.rcParams['axes.spines.right'] = False
     plt.rcParams['axes.spines.top'] = False
     sns.despine(top=True, right=True, left=False, bottom=False)
     plt.xticks(range(0, len(ticks) * 2, 2), ticks)
-    plt.yticks(np.arange(0, 27, 2))
-    plt.xlim(-2, len(ticks)*2)
+    plt.yticks(np.arange(0, 30, 5))
+    plt.xlim(-1, len(ticks)*2-1)
     #plt.ylim(0, 8)
     # plt.xlabel('Packet size (Bytes)')
     # plt.ylabel('Packet receive latency (\u03BCs)')
-    ax.set_xlabel('Packet size (B)')
-    ax.set_ylabel('Packet receive latency (\u03BCs)')
+    ax.set_xlabel('Packet Size (Bytes)')
+    ax.set_ylabel('Packet Latency (%ss)' % r'$\mu$')
     ax.yaxis.grid(True)
-    plt.savefig('../latency_' + str(exp) + '.pdf', ext='pdf', bbox_inches="tight")
-    plt.show()
+    plt.tight_layout()
+    plt.savefig('../latency_' + str(exp) + '.eps', ext='eps', bbox_inches="tight")
+    # plt.show()
 
 
 def plot_agent_load():
@@ -439,17 +452,26 @@ def plot_agent_load():
     throughput_64 = [6.21866155276, 12.0620738732, 17.1684742196, 22.3771506654, 28.7451668127, 31.0031466775, 35.0225459591, 40.0166995541]
     
     sns.set_context(context='paper', rc=DEFAULT_RC)
-    #sns.set_style(style='ticks')
-    plt.rc('text', usetex=TEX_ENABLED)
+    # sns.set_style(style='ticks')
+    plt.rc('font', **FONT_DICT)
     plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    # plt.rc('legend', handlelength=1., handletextpad=0.1)
+
+    # sns.set_context(context='paper', rc=DEFAULT_RC)
+    #sns.set_style(style='ticks')
+    # plt.rc('text', usetex=TEX_ENABLED)
+    # plt.rc('ps', **{'fonttype': 42})
     #plt.rc('legend', handlelength=1., handletextpad=0.1)
     fig, ax = plt.subplots()
-    plt.plot(x_axis, throughput_1024, label='Packet Size = 1024 B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_512, label='Packet Size = 512 B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_256, label='Packet Size = 256 B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_128, label='Packet Size = 128 B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_64, label='Packet Size = 64 B', marker='.', markersize=TICK_FONT_SIZE)
-    ax.set_xlabel('Number of CPU cores')
+    plt.plot(x_axis, throughput_1024, label='Pkt Size=1024B', marker='.', markersize=TICK_FONT_SIZE)
+    plt.plot(x_axis, throughput_512, label='Pkt Size=512B', marker='.', markersize=TICK_FONT_SIZE)
+    plt.plot(x_axis, throughput_256, label='Pkt Size=256B', marker='.', markersize=TICK_FONT_SIZE)
+    plt.plot(x_axis, throughput_128, label='Pkt Size=128B', marker='.', markersize=TICK_FONT_SIZE)
+    plt.plot(x_axis, throughput_64, label='Pkt Size=64B', marker='.', markersize=TICK_FONT_SIZE)
+    ax.set_xlabel('# CPU Cores')
     ax.set_ylabel('Throughput (Gbps)')
 
     ax.set_yticks(np.arange(0, 41, 5))
@@ -458,8 +480,9 @@ def plot_agent_load():
     ax.spines['top'].set_visible(False)
     ax.grid(True, which="both", ls="--", alpha=0.6)
     plt.legend(loc='best')
+    plt.tight_layout()
     plt.savefig('../agent_load.eps', ext='eps', bbox_inches="tight")
-    plt.show()
+    # plt.show()
 
 def plot_failover_delay():
     # Extracted from google sheet calculations
@@ -492,14 +515,21 @@ def plot_failover_delay():
 if __name__ == '__main__':
     path = sys.argv[1]
     print("Plotting Evaluations fom: " + path)
-    plot_loss_percentage(path)
-    plot_failover_delay()
-    plot_throughput_normal(path)
-    plot_agent_load()
+    # Paper
+    # plot_loss_percentage(path)
+    # Paper
+    # plot_failover_delay()
+    # Paper
+    # plot_throughput_normal(path)
+    # Paper
+    # plot_agent_load()
 
     # latency results in a different path
-    #plot_cdf_latency(path, 'inc')
+    # Paper
+    plot_cdf_latency(path, 'inc')
     
     #plot_throughput_failure(path, size=size_arr[0], size_index=0, k=1) # 64B k=1ms
-    plot_throughput_failure(path, size=size_arr[4], size_index=1, k=1) # 1024B k=1ms
-    plot_cpu(path)
+    # Paper
+    # plot_throughput_failure(path, size=size_arr[4], size_index=1, k=1) # 1024B k=1ms
+    # Paper
+    # plot_cpu(path)
