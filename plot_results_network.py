@@ -519,9 +519,6 @@ def plot_failover_delay(mode='bar'):
     ax.grid(True, which="both", ls="--", alpha=0.6, zorder=0)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    if mode =='line':
-        ax.set_ylim(0, int(max(y_axis)) + 1)
-        ax.set_xlim(0, int(max(y_axis)) + 1)
     plt.tight_layout()
     plt.savefig('../failover_delay_' + mode + '.eps', ext='eps', bbox_inches="tight")
     plt.show()
