@@ -18,6 +18,7 @@ import seaborn as sns
 # Line Styles
 DEFAULT_LINE_WIDTH = 4
 ALTERNATIVE_LINE_WIDTH = 5
+MEDIUM_LINE_WIDTH = 3
 SMALL_LINE_WIDTH = 2
 LINE_STYLES = ['-', '--', '-.', ':']
 
@@ -26,6 +27,7 @@ TEX_ENABLED = False
 TICK_FONT_SIZE = 24
 AXIS_FONT_SIZE = 24
 LEGEND_FONT_SIZE = 22
+CAP_SIZE = LEGEND_FONT_SIZE / 2
 
 FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
 
@@ -82,7 +84,7 @@ sns.set_style(style='ticks')
 plt.rc('text', usetex=TEX_ENABLED)
 plt.rc('ps', **{'fonttype': 42})
 plt.rc('legend', handlelength=1., handletextpad=0.1)
-fig, ax = plt.subplots(figsize=(8, 4.2))
+fig, ax = plt.subplots()
 
 def plot_throughput_normal(path):
     mean_list = []
@@ -484,33 +486,46 @@ def plot_agent_load():
     plt.savefig('../agent_load.eps', ext='eps', bbox_inches="tight")
     # plt.show()
 
-def plot_failover_delay():
+def plot_failover_delay(mode='bar'):
     # Extracted from google sheet calculations
-    y_axis = [1.04, 5.07, 7.39, 12.35, 20.75,24.75, 30.14]
+    y_axis = [1.04, 5.07, 9.28, 15.06, 20.75,24.75, 30.14]
+    y_std = [0.406853887, 0.8856466732, 0.7557480249, 0.2358643558, 0.8181474411 ,0.3507938208 ,0.629904846]
     x_axis = k_arr
 
-    sns.set_context(context='paper', rc=DEFAULT_RC)
-    sns.set_style(style='ticks')
-    plt.rc('text', usetex=TEX_ENABLED)
+    # sns.set_style(style='ticks')
+    plt.rc('font', **FONT_DICT)
     plt.rc('ps', **{'fonttype': 42})
-    plt.rc('legend', handlelength=1., handletextpad=0.1)
-    plt.rcParams['text.latex.preamble'] = [r'\usepackage{sansmath}',r'\sansmath']
-    
-    fig, ax = plt.subplots(figsize=(8,4.2))
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    # plt.rc('legend', handlelength=1., handletextpad=0.1)
 
-    ax.plot(x_axis, y_axis, color=color_pallete[1], linewidth=DEFAULT_LINE_WIDTH, marker='o', markersize=10, zorder=3)
-    ax.plot(x_axis, x_axis, '--', color='#FF0000', linewidth=DEFAULT_LINE_WIDTH, zorder=3)
+    # sns.set_context(context='paper', rc=DEFAULT_RC)
+    #sns.set_style(style='ticks')
+    # plt.rc('text', usetex=TEX_ENABLED)
+    # plt.rc('ps', **{'fonttype': 42})
+    #plt.rc('legend', handlelength=1., handletextpad=0.1)
+    
+    fig, ax = plt.subplots()
+    if mode == 'bar':
+        ax.bar(x_axis, y_axis, ecolor='black', capsize=CAP_SIZE, color=color_pallete[1], yerr=y_std, width = MEDIUM_LINE_WIDTH, zorder=3)
+    elif mode == 'line':
+        ax.plot(x_axis, y_axis, color=color_pallete[1], marker='o', markersize=LEGEND_FONT_SIZE, zorder=2)
+        ax.plot(x_axis, x_axis, '--', color='#FF0000', linewidth=DEFAULT_LINE_WIDTH, zorder=3)
     ax.set_xlabel('Heartbeat Timeout Interval (ms)')
-    ax.set_ylabel('Flow disruption duration (ms)')
-    ax.set_yticks(y_axis)
+    ax.set_ylabel('Flow Disruption Duration (ms)')
+    ax.set_yticks([int(i) for i in y_axis])
     ax.set_xticks(x_axis)
     ax.grid(True, which="both", ls="--", alpha=0.6, zorder=0)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    ax.set_ylim(0, int(max(y_axis)) + 1)
-    ax.set_xlim(0, int(max(y_axis)) + 1)
-    plt.savefig('../failover_delay.eps', ext='eps', bbox_inches="tight")
+    if mode =='line':
+        ax.set_ylim(0, int(max(y_axis)) + 1)
+        ax.set_xlim(0, int(max(y_axis)) + 1)
+    plt.tight_layout()
+    plt.savefig('../failover_delay_' + mode + '.eps', ext='eps', bbox_inches="tight")
     plt.show()
+
 
 if __name__ == '__main__':
     path = sys.argv[1]
@@ -518,7 +533,7 @@ if __name__ == '__main__':
     # Paper
     # plot_loss_percentage(path)
     # Paper
-    # plot_failover_delay()
+    plot_failover_delay(mode='line')
     # Paper
     # plot_throughput_normal(path)
     # Paper
@@ -526,7 +541,7 @@ if __name__ == '__main__':
 
     # latency results in a different path
     # Paper
-    plot_cdf_latency(path, 'inc')
+    #plot_cdf_latency(path, 'inc')
     
     #plot_throughput_failure(path, size=size_arr[0], size_index=0, k=1) # 64B k=1ms
     # Paper
