@@ -23,8 +23,8 @@ LINE_STYLES = ['-', '--', '-.', ':']
 
 # Font
 TEX_ENABLED = False
-TICK_FONT_SIZE = 24
-AXIS_FONT_SIZE = 24
+TICK_FONT_SIZE = 30
+AXIS_FONT_SIZE = 30
 LEGEND_FONT_SIZE = 22
 
 FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
@@ -82,7 +82,8 @@ sns.set_style(style='ticks')
 plt.rc('text', usetex=TEX_ENABLED)
 plt.rc('ps', **{'fonttype': 42})
 plt.rc('legend', handlelength=1., handletextpad=0.1)
-fig, ax = plt.subplots(figsize=(8, 4.2))
+# fig, ax = plt.subplots(figsize=(8, 4.2))
+fig, ax = plt.subplots()
 
 def plot_throughput_normal(path):
     mean_list = []
@@ -229,13 +230,15 @@ def plot_throughput_failure(path, size=1024, metric='bps', size_index=0, k=1):
     all_bits_arr = []
     all_timestamp_arr = []
     sns.set_context(context='paper', rc=DEFAULT_RC)
-    #sns.set_style(style='ticks')
-    plt.rc('text', usetex=TEX_ENABLED)
+    # sns.set_style(style='ticks')
+    plt.rc('font', **FONT_DICT)
     plt.rc('ps', **{'fonttype': 42})
-    #plt.rc('legend', handlelength=1., handletextpad=0.1)
-    mpl.rcParams["font.size"] = LEGEND_FONT_SIZE
-    #fig, ax = plt.subplots()
-    
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    # plt.rc('legend', handlelength=1., handletextpad=0.1)
+    # mpl.rcParams["font.size"] = LEGEND_FONT_SIZE
+    fig, ax = plt.subplots()
 
     min_throughput = 10
     min_throughput_index = 0
@@ -302,7 +305,7 @@ def plot_throughput_failure(path, size=1024, metric='bps', size_index=0, k=1):
         xy=(min_throughput_index - (min_throughput_index - 3), min_throughput), 
         xytext=(min_throughput_index - (min_throughput_index - 3), min_throughput-0.5),
         horizontalalignment="center", 
-        arrowprops=dict(arrowstyle='<|-', color='black', lw=DEFAULT_LINE_WIDTH))
+        arrowprops=dict(arrowstyle='<|-', color='black', lw=DEFAULT_LINE_WIDTH), fontsize=22)
     # #plt.plot(x_axis, ideal, '--', color='tab:red', label='Line rate (Mbps)')
         #x_axis.append(failure_point_ns)
     #     plt.scatter(failure_point_ns, 0, marker='x', label='Failure point', color='tab:blue')
@@ -318,14 +321,15 @@ def plot_throughput_failure(path, size=1024, metric='bps', size_index=0, k=1):
     ax.set_xticks(centered_x)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
+    sns.despine(top=True, right=True, left=False, bottom=False)
     plt.legend(loc='lower right')
     ax.grid(True, which="both", ls="--", alpha=0.6)
     #plt.grid(True)
     ticks = []
-
+    plt.tight_layout()
     #plt.xticks([int(i/10) for i in range(0, len(x_axis), 10)])
     plt.savefig('../throughput_size_' + str(size) + '_best.eps', ext='eps', bbox_inches="tight")
-    plt.show(fig)
+    # plt.show(fig)
 
 def plot_cpu(path):
     cpu_cyle_arr = []
@@ -486,31 +490,38 @@ def plot_agent_load():
 
 def plot_failover_delay():
     # Extracted from google sheet calculations
-    y_axis = [1.04, 5.07, 7.39, 12.35, 20.75,24.75, 30.14]
+    y_axis = [1.04, 5.07, 7.39, 12.35, 20.75, 24.75, 30.14]
     x_axis = k_arr
 
     sns.set_context(context='paper', rc=DEFAULT_RC)
     sns.set_style(style='ticks')
-    plt.rc('text', usetex=TEX_ENABLED)
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
     plt.rc('ps', **{'fonttype': 42})
     plt.rc('legend', handlelength=1., handletextpad=0.1)
-    plt.rcParams['text.latex.preamble'] = [r'\usepackage{sansmath}',r'\sansmath']
+
+    # plt.rcParams['text.latex.preamble'] = [r'\usepackage{sansmath}',r'\sansmath']
     
-    fig, ax = plt.subplots(figsize=(8,4.2))
+    # fig, ax = plt.subplots(figsize=(8,4.2))
+    fig, ax = plt.subplots()
 
     ax.plot(x_axis, y_axis, color=color_pallete[1], linewidth=DEFAULT_LINE_WIDTH, marker='o', markersize=10, zorder=3)
     ax.plot(x_axis, x_axis, '--', color='#FF0000', linewidth=DEFAULT_LINE_WIDTH, zorder=3)
-    ax.set_xlabel('Heartbeat Timeout Interval (ms)')
-    ax.set_ylabel('Flow disruption duration (ms)')
-    ax.set_yticks(y_axis)
+    ax.set_xlabel('Heartbeat Timeout T (ms)')
+    ax.set_ylabel('Failover Delay (ms)')
+    ax.set_yticks(np.arange(0, 31, 5))
     ax.set_xticks(x_axis)
     ax.grid(True, which="both", ls="--", alpha=0.6, zorder=0)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
+    sns.despine(top=True, right=True, left=False, bottom=False)
     ax.set_ylim(0, int(max(y_axis)) + 1)
     ax.set_xlim(0, int(max(y_axis)) + 1)
+    plt.tight_layout()
     plt.savefig('../failover_delay.eps', ext='eps', bbox_inches="tight")
-    plt.show()
+    # plt.show()
 
 if __name__ == '__main__':
     path = sys.argv[1]
@@ -526,10 +537,10 @@ if __name__ == '__main__':
 
     # latency results in a different path
     # Paper
-    plot_cdf_latency(path, 'inc')
+    # plot_cdf_latency(path, 'inc')
     
     #plot_throughput_failure(path, size=size_arr[0], size_index=0, k=1) # 64B k=1ms
     # Paper
-    # plot_throughput_failure(path, size=size_arr[4], size_index=1, k=1) # 1024B k=1ms
+    plot_throughput_failure(path, size=size_arr[4], size_index=1, k=1) # 1024B k=1ms
     # Paper
     # plot_cpu(path)
