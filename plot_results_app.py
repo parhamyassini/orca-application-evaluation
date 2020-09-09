@@ -713,9 +713,9 @@ def plot_scatter_workers(path):
 
     fig, ax = plt.subplots()
     plt.plot(x_axis, sender_runtime_udp, '-', marker='o', color=color_pallete[0], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast')
-    plt.plot(x_axis, sender_runtime_udp_4, '-', marker='^', color=color_pallete[3], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 sender/4 dsts')
-    plt.plot(x_axis, sender_runtime_udp_2, '-', marker='p', color=color_pallete[2], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 sender/2 dsts')
-    plt.plot(x_axis[:-2], sender_runtime_udp_1, '-', marker='s', color=color_pallete[1], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 sender/dst')
+    plt.plot(x_axis, sender_runtime_udp_4, '-', marker='^', color=color_pallete[3], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 core/4 dsts')
+    plt.plot(x_axis, sender_runtime_udp_2, '-', marker='p', color=color_pallete[2], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 core/2 dsts')
+    plt.plot(x_axis[:-2], sender_runtime_udp_1, '-', marker='s', color=color_pallete[1], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 core/dst')
     #plt.scatter(x_axis, sender_runtime_udp, marker='o', label='Unicast', color=color_pallete[0], markersize=12)
     #plt.plot(x_axis, yfit, '--')
     
@@ -818,12 +818,12 @@ def plot_send_cdf_size_based(path):
 if __name__ == '__main__':
     path = sys.argv[1]
     print("Plotting Evaluations fom: " + path)
-    for num_receivers in experiments_sizes:
-        plot_app_times(path, num_receivers)
+    # for num_receivers in experiments_sizes:
+        # plot_app_times(path, num_receivers)
     
     # for i in range(len(workload_sizes)):
     #     plot_cdf_both(path, 12, 1, 'log', i)
-    # plot_scatter_workers(path)
+    plot_scatter_workers(path)
 
 
     # plot_egress_data(path, 'receivers')
