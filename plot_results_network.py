@@ -715,7 +715,7 @@ def plot_controller_throughput(path):
     ind = np.arange(0, len(category_labels))
     print(ind)
     ax.set_xticks(ind)
-    ax.set_ylabel('Processed Events per Second')
+    ax.set_ylabel('# CONFIRM Events/sec')
     ax.set_xticklabels(category_labels)
     ax.set_xlabel('Controller Placement')
     custom_ticks = np.linspace(0, 1250, 6, dtype=int)
@@ -724,8 +724,9 @@ def plot_controller_throughput(path):
     ax.bar(ind, mean_list, yerr=err_list, align='center', ecolor='black', capsize=CAP_SIZE , zorder=3, color=color_pallete[1], width = 0.4)
     ax.grid(zorder=0)
     ax.yaxis.grid(True)
-    
     ax.xaxis.grid(False)
+    sns.despine(top=True, right=True, left=False, bottom=False)
+    plt.tight_layout()
     plt.savefig('../controller_throughput.eps', ext='eps', bbox_inches="tight")
     plt.show()
 
