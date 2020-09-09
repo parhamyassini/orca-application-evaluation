@@ -86,6 +86,78 @@ plt.rc('ps', **{'fonttype': 42})
 plt.rc('legend', handlelength=1., handletextpad=0.1)
 fig, ax = plt.subplots()
 
+def plot_stacked_bar(data, series_labels, category_labels=None, 
+                     show_values=False, value_format="{}", x_label=None, 
+                     y_label=None, colors=None, grid=True, reverse=False):
+    """Plots a stacked bar chart with the data and labels provided.
+
+    Keyword arguments:
+    data            -- 2-dimensional numpy array or nested list
+                       containing data for each series in rows
+    series_labels   -- list of series labels (these appear in
+                       the legend)
+    category_labels -- list of category labels (these appear
+                       on the x-axis)
+    show_values     -- If True then numeric value labels will 
+                       be shown on each bar
+    value_format    -- Format string for numeric value labels
+                       (default is "{}")
+    y_label         -- Label for y-axis (str)
+    colors          -- List of color labels
+    grid            -- If True display grid
+    reverse         -- If True reverse the order that the
+                       series are displayed (left-to-right
+                       or right-to-left)
+    """
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('legend', handlelength=1., handletextpad=0.1)
+    fig, ax = plt.subplots()
+
+    ny = len(data[0])
+    ind = list(range(ny))
+
+    axes = []
+    cum_size = np.zeros(ny)
+
+    data = np.array(data)
+
+    if reverse:
+        data = np.flip(data, axis=1)
+        category_labels = reversed(category_labels)
+
+    for i, row_data in enumerate(data):
+        color = colors[i] if colors is not None else None
+        axes.append(plt.bar(ind, row_data, width=0.4, bottom=cum_size, 
+                            label=series_labels[i], color=color))
+        cum_size += row_data
+
+    if category_labels:
+        ax.set_xticks(ind)
+        ax.set_xticklabels(category_labels)
+
+    if y_label:
+        ax.set_ylabel(y_label)
+
+    if x_label:
+         ax.set_xlabel(x_label)
+    
+    ax.legend(loc='upper left')
+
+    if grid:
+        plt.grid()
+
+    if show_values:
+        for axis in axes:
+            for bar in axis:
+                w, h = bar.get_width(), bar.get_height()
+                plt.text(bar.get_x() + w/2, bar.get_y() + h/2, 
+                         value_format.format(h), ha="center", 
+                         va="center", fontsize=LEGEND_FONT_SIZE)
+
 def plot_throughput_normal(path):
     mean_list = []
     err_list = []
@@ -521,16 +593,152 @@ def plot_failover_delay(mode='bar'):
     ax.spines['top'].set_visible(False)
     plt.tight_layout()
     plt.savefig('../failover_delay_' + mode + '.eps', ext='eps', bbox_inches="tight")
+    #plt.show()
+
+def plot_cpu_cycles(mode='bar'):
+    # Extracted from google sheet calculations
+
+    # mean_cycles = [375, 435, 456, 478, 497]
+    # percentile_99_cycles = [1440, 1555, 1590, 1625, 1650]
+    # min_cycles = [40, 40, 40, 40, 40]
+
+    # x_axis_labels = ['100K', '200K', '300K', '400K', '500K']
+    
+
+    mean_cycles = [379, 384, 375]
+    percentile_99_cycles = [410 , 430, 1440]
+    min_cycles = [40, 40, 40, ]
+    x_axis_labels = ['10K', '50K', '100K']
+    x_axis = np.arange(len(x_axis_labels))
+    # sns.set_style(style='ticks')
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    # plt.rc('legend', handlelength=1., handletextpad=0.1)
+    fig, ax = plt.subplots()
+    # sns.set_context(context='paper', rc=DEFAULT_RC)
+    #sns.set_style(style='ticks')
+    # plt.rc('text', usetex=TEX_ENABLED)
+    # plt.rc('ps', **{'fonttype': 42})
+    #plt.rc('legend', handlelength=1., handletextpad=0.1)
+    
+    y_axis = mean_cycles
+    y_err = np.array((np.subtract(mean_cycles, min_cycles), np.subtract(percentile_99_cycles, mean_cycles)))
+    
+    if mode == 'bar':
+        ax.bar(x_axis, y_axis, ecolor='black', capsize=CAP_SIZE, color=color_pallete[1], yerr=y_err)
+    elif mode == 'line':
+        ax.plot(x_axis, y_axis, color=color_pallete[1], marker='o', markersize=LEGEND_FONT_SIZE, zorder=2)
+        ax.plot(x_axis, x_axis, '--', color='#FF0000', linewidth=DEFAULT_LINE_WIDTH, zorder=3)
+    ax.set_xlabel('# Active Sessions in Rack ')
+    ax.set_ylabel('CPU Usage (cycles/packet)')
+    
+    ax.set_xticks(x_axis)
+    ax.set_xticklabels(x_axis_labels)
+    
+    print (y_axis)
+    print (x_axis)
+    ax.grid(True, which="both", ls="--", alpha=0.6, zorder=0)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig('../cpu_cycles_' + mode + '.eps', ext='eps', bbox_inches="tight")
     plt.show()
 
+def plot_controller_latency_bar(path):
+    means = []
+    file_name = path + '/join_delay.csv'
+    # From ping results
+    avg_rtt = [0.479, 0.689, 0.856, 1.125]
+
+    category_labels = ['P1', 'P2', 'P3', 'P4']
+    series_labels = ['Netowrk delay', 'Control plane delay']
+    for i in range(7):
+        if (i %2) != 0:
+            continue
+        latency = []
+        with open(file_name) as csvfile:
+            results = csv.reader(csvfile, delimiter=',')
+            for idx, row in enumerate(results):
+                if idx == 0:
+                    continue
+                try:
+                    latency.append(float(row[i]))
+                except:
+                    continue
+        means.append(np.mean(latency))
+    data = np.array((avg_rtt, np.subtract(means,avg_rtt)))
+    
+    plot_stacked_bar(
+        data, 
+        series_labels, 
+        category_labels=category_labels, 
+        show_values=True, 
+        value_format="{:.2f}",
+        colors=color_pallete,
+        y_label="Receiver Join Delay (ms)",
+        x_label="Controller Placement"
+    )
+    sns.despine(top=True, right=True, left=False, bottom=False)
+    plt.tight_layout()
+    plt.savefig('../join_latency_stacked_bar.eps', ext='eps', bbox_inches="tight")
+    plt.show()
+    
+def plot_controller_throughput(path):
+    file_name = path + '/controller_throuput.csv'
+    avg_rtt = [0.437, 0.650, 0.880, 1.135]
+    category_labels = ['P1', 'P2', 'P3', 'P4']
+    mean_list = []
+    err_list = []
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    fig, ax = plt.subplots()
+    for i in range(7): # Results contain 0.1ms steps, plot 0.2ms steps to be consistent with P1-P4 in paper
+        if (i %2) != 0:
+            continue
+        throughput_list = []
+        with open(file_name) as csvfile:
+            results = csv.reader(csvfile, delimiter=',')
+            for idx, row in enumerate(results):
+                try:
+                    throughput_list.append(int(row[i]))
+                except:
+                    continue
+        mean_list.append(np.mean(throughput_list))
+        err_list.append(np.std(throughput_list))
+    print (err_list)
+    ind = np.arange(0, len(category_labels))
+    print(ind)
+    ax.set_xticks(ind)
+    ax.set_ylabel('Processed Events per Second')
+    ax.set_xticklabels(category_labels)
+    ax.set_xlabel('Controller Placement')
+    custom_ticks = np.linspace(0, 1250, 6, dtype=int)
+    ax.set_yticks(custom_ticks)
+    ax.set_yticklabels(custom_ticks)
+    ax.bar(ind, mean_list, yerr=err_list, align='center', ecolor='black', capsize=CAP_SIZE , zorder=3, color=color_pallete[1], width = 0.4)
+    ax.grid(zorder=0)
+    ax.yaxis.grid(True)
+    
+    ax.xaxis.grid(False)
+    plt.savefig('../controller_throughput.eps', ext='eps', bbox_inches="tight")
+    plt.show()
 
 if __name__ == '__main__':
     path = sys.argv[1]
     print("Plotting Evaluations fom: " + path)
+    #plot_cpu_cycles(mode='bar')
+    #plot_controller_latency_bar(path)
+    plot_controller_throughput(path)
     # Paper
     # plot_loss_percentage(path)
     # Paper
-    plot_failover_delay(mode='line')
+    #plot_failover_delay(mode='line')
     # Paper
     # plot_throughput_normal(path)
     # Paper
