@@ -9,26 +9,34 @@ import random
 import string
 from multiprocessing import Process, Queue, Value, Array
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.path as mpath
 import matplotlib.ticker as mticker
+import matplotlib.font_manager as font_manager
 import math
 import seaborn as sns
-
+mpl.use('cairo')
 BAR_PLOT_TICKS = 6
 
 # Line Styles
-DEFAULT_LINE_WIDTH = 4
+DEFAULT_LINE_WIDTH = 8
 ALTERNATIVE_LINE_WIDTH = 5
 SMALL_LINE_WIDTH = 2
 LINE_STYLES = ['-', '--', '-.', ':']
+# FONT_FAMILY = 'Times New Roman'
+FONT_FAMILY = 'Linux Libertine O'
+
 
 # Font
 TEX_ENABLED = False
-TICK_FONT_SIZE = 24
-AXIS_FONT_SIZE = 24
-LEGEND_FONT_SIZE = 22
+TICK_FONT_SIZE = 29#24
+AXIS_FONT_SIZE = 32#24
+LEGEND_FONT_SIZE = 24
+AUTLABEL_FONT_SIZE = 22
 
-FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
+# FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
+FONT_DICT = {'family': FONT_FAMILY}
 
 flatui = ["#0072B2", "#D55E00", "#009E73", "#3498db", "#CC79A7", "#F0E442", "#56B4E9"]
 
@@ -116,10 +124,10 @@ def plot_app_times(path, num_receivers):
     rects1 = ax.bar(ind, sender_runtime_udp_1, width, color=color_pallete[0], edgecolor='black', hatch='//', lw=0)
     #rects2 = ax.bar(ind + width, sender_runtime_udp_2, width)
     #rects3 = ax.bar(ind + 2*width, sender_runtime_udp_4, width)
-    rects4 = ax.bar(ind + width, sender_runtime_orca, width, color=color_orca, edgecolor='black', hatch='xx', lw=0)
+    rects4 = ax.bar(ind + width, sender_runtime_orca, width, color=color_orca, edgecolor='black', hatch='\\\\', lw=0)
     
     # add some text for labels, title and axes ticks
-    ax.set_ylabel('Running Time (ms)')
+    ax.set_ylabel('Comm. Time (ms)')
     ax.set_xlabel('Workload Size (MB)')
     ax.yaxis.set_tick_params()
     # yticks = list(np.linspace(0, 15000, 4))
@@ -136,7 +144,7 @@ def plot_app_times(path, num_receivers):
     ax.get_yaxis().get_offset_text().set_visible(False)
     ax_max = max(ax.get_yticks())
     exponent_axis = np.floor(np.log10(ax_max)).astype(int)
-    ax.annotate(r'$\times$10$^{\mathregular{%i}}$'%(exponent_axis-1), xy=(.01, .98), xycoords='axes fraction', fontsize='xx-large', fontfamily='serif')
+    ax.annotate(r'$\times$10$^{\mathregular{%i}}$'%(exponent_axis-1), xy=(.01, .98), xycoords='axes fraction', fontsize=LEGEND_FONT_SIZE, fontfamily=FONT_FAMILY)
 
     def autolabel(rects):
         """
@@ -144,9 +152,9 @@ def plot_app_times(path, num_receivers):
         """
         for rect in rects:
             height = rect.get_height()
-            ax.text(rect.get_x() + rect.get_width()/2., 1.0*height,
+            ax.text(rect.get_x() + 1.15*rect.get_width()/2., 1.0*height,
                     '%d' % int(height),
-                    ha='center', va='bottom', fontsize=LEGEND_FONT_SIZE - 6)
+                    ha='center', va='bottom', fontsize=AUTLABEL_FONT_SIZE)
 
     autolabel(rects1)
     #autolabel(rects2)
@@ -157,7 +165,7 @@ def plot_app_times(path, num_receivers):
     plt.tight_layout()
     # ax.spines['right'].set_visible(False)
     # ax.spines['top'].set_visible(False)
-    plt.savefig('../app_runtime_n' + str(num_receivers) + 'm1.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../app_runtime_n' + str(num_receivers) + 'm1.pdf', ext='pdf', bbox_inches="tight")
     # plt.show()
 
 def plot_app_time_compare(path, num_receivers):
@@ -209,7 +217,7 @@ def plot_app_time_compare(path, num_receivers):
     rect_orca = ax.bar(ind + (num_experiments+1)*width, sender_runtime_orca, width, color=color_orca)
     
     # add some text for labels, title and axes ticks
-    ax.set_ylabel('Running Time (ms)')
+    ax.set_ylabel('Comm. Time (ms)')
     ax.set_xlabel('Total File Size (MB)')
     ax.grid(True)
     ax.set_axisbelow(True)
@@ -303,7 +311,7 @@ def plot_app_times_complete(path, num_receiver_arr):
         pos_x += 1
     for x in ax.flat:
         x.set_xlabel('Total File Size (MB)')
-        x.set_ylabel('Running Time (ms)')
+        x.set_ylabel('Comm. Time (ms)')
 
     plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.29,
                     wspace=0.35)
@@ -379,10 +387,10 @@ def plot_cdf(path, num_receivers, num_send_procs, goal="send_times", mode="linea
                     wspace=0.35)
     ax.legend(handles, labels, fontsize=14)
     if mode == 'log':
-        savepath = '../' + goal + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] + '_log.eps'
+        savepath = '../' + goal + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] + '_log.pdf'
     else: 
-        savepath = '../' + goal + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] +'_.eps'
-    plt.savefig(savepath, ext='eps', bbox_inches="tight")
+        savepath = '../' + goal + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] +'_.pdf'
+    plt.savefig(savepath, ext='pdf', bbox_inches="tight")
     # plt.show(fig)
 
 
@@ -466,21 +474,27 @@ def plot_cdf_both(path, num_receivers, num_send_procs, mode="linear", workload_i
     #ax.set_color_cycle(['red', 'green'])
         print(pos_x%2, pos_y%2)
         ax.set_ylim(top=1)
+        
         #title = 'CDF of ' + goal.replace("_", " ") + ' with ' + str(num_receivers) + ' receivers(total ' + workload_sizes[i+1] + 'M files)'
         #ax.set_title(title)
         ax.plot(send_udp_times_sorted, send_p_udp, label='Unicast send time', linestyle='-', linewidth=DEFAULT_LINE_WIDTH, color=color_pallete[0])
-        ax.plot(send_orca_times_sorted, send_p_orca, label='Orca send time',  linestyle='-', linewidth=DEFAULT_LINE_WIDTH, color=color_orca)
-        ax.plot(wait_udp_times_sorted, wait_p_udp, label='Unicast wait time',  linestyle=':', linewidth=DEFAULT_LINE_WIDTH, color=color_pallete[0])
-        ax.plot(wait_orca_times_sorted, wait_p_orca, label='Orca wait time',  linestyle=':', linewidth=DEFAULT_LINE_WIDTH, color=color_orca)
+        ax.plot(send_orca_times_sorted, send_p_orca, label='Orca send time', linestyle='-', linewidth=DEFAULT_LINE_WIDTH, color=color_orca)
+        ax.plot(wait_udp_times_sorted, wait_p_udp, label='Unicast wait time', linestyle=':', linewidth=DEFAULT_LINE_WIDTH, color=color_pallete[0])
+        ax.plot(wait_orca_times_sorted, wait_p_orca, label='Orca wait time', linestyle=':', linewidth=DEFAULT_LINE_WIDTH, color=color_orca)
         #ax.plot(orca_times_sorted_c, p_orca_c, label='Orca Constrained Receiver',  linewidth=2, color=color_pallete[1])
         if mode == 'log':
             ax.set_xscale('log')
+        # ax.set_xlim(left=1, right=10000)
+        # plt.xticks([0, 0.2, 0.4, 0.6, 0.8, 1.])
+        # plt.xticks([0, 10, 100, 1000])
         ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
         #ax[pos_x%2, pos_y%2].legend(loc='best')
         ax.grid(True, which="both", ls="--", alpha=0.6)
         handles, labels = ax.get_legend_handles_labels()
         ax.yaxis.set_tick_params()
         ax.xaxis.set_tick_params()
+
+        plt.minorticks_off()
 
         pos_y += 1
         pos_x += pos_y +1
@@ -495,10 +509,10 @@ def plot_cdf_both(path, num_receivers, num_send_procs, mode="linear", workload_i
     plt.tight_layout()
     ax.legend(handles, labels)
     if mode == 'log':
-        savepath = '../cdf' + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] + '_log.eps'
-    else: 
-        savepath = '../cdf' + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] +'_.eps'
-    plt.savefig(savepath, ext='eps', bbox_inches="tight")
+        savepath = '../cdf' + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] + '_log.pdf'
+    else:
+        savepath = '../cdf' + '_n' + str(num_receivers) +'m' + str(num_send_procs) + '_' + workloads[workload_idx] +'_.pdf'
+    plt.savefig(savepath, ext='pdf', bbox_inches="tight")
     # plt.show(fig)
 
 def plot_app_time_scatter(path):
@@ -632,7 +646,7 @@ def plot_egress_data(path, mode='receivers'):
     #plt.xticks(x_axis)
     plt.xticks(x_axis_vary_receivers)
     
-    plt.savefig('../egress_data_' + mode + '.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../egress_data_' + mode + '.pdf', ext='pdf', bbox_inches="tight")
     # plt.show(fig)
 
 
@@ -711,15 +725,27 @@ def plot_scatter_workers(path):
         #             sender_runtime_orca_c.append(float(row[1]) * 1000)
     print(sender_runtime_udp)
 
+    star = mpath.Path.circle(radius=0.8)
+    circle = mpath.Path.unit_circle()
+    # concatenate the circle with an internal cutout of the star
+    verts = np.concatenate([circle.vertices, star.vertices[::-1, ...]])
+    codes = np.concatenate([circle.codes, star.codes])
+    cut_star = mpath.Path(verts, codes)
+    marker_style = dict(markersize=14, mew=2.5, mfc='w')
     fig, ax = plt.subplots()
-    plt.plot(x_axis, sender_runtime_udp, '-', marker='o', color=color_pallete[0], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast')
-    plt.plot(x_axis, sender_runtime_udp_4, '-', marker='^', color=color_pallete[3], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 core/4 dsts')
-    plt.plot(x_axis, sender_runtime_udp_2, '-', marker='p', color=color_pallete[2], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 core/2 dsts')
-    plt.plot(x_axis[:-2], sender_runtime_udp_1, '-', marker='s', color=color_pallete[1], linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Unicast, 1 core/dst')
+    plt.plot(x_axis, sender_runtime_udp, '-', color=color_pallete[0], linewidth=DEFAULT_LINE_WIDTH, 
+    label='ALM, 1 core for all dsts', marker='o', **marker_style)
+    plt.plot(x_axis, sender_runtime_udp_4, '-', color=color_pallete[3], linewidth=DEFAULT_LINE_WIDTH, 
+    label='ALM, 1 core/4 dsts', marker='^', **marker_style)
+    plt.plot(x_axis, sender_runtime_udp_2, '-', color=color_pallete[2], linewidth=DEFAULT_LINE_WIDTH, 
+    label='ALM, 1 core/2 dsts', marker='p', **marker_style)
+    plt.plot(x_axis[:-2], sender_runtime_udp_1, '-', color=color_pallete[1], linewidth=DEFAULT_LINE_WIDTH,
+    label='ALM, 1 core/dst', marker='s', **marker_style)
     #plt.scatter(x_axis, sender_runtime_udp, marker='o', label='Unicast', color=color_pallete[0], markersize=12)
     #plt.plot(x_axis, yfit, '--')
     
-    plt.plot(x_axis, sender_runtime_orca, '-', marker='*', color=color_orca, linewidth=DEFAULT_LINE_WIDTH, markersize=14, label='Orca')
+    plt.plot(x_axis, sender_runtime_orca, '-', color=color_orca, linewidth=DEFAULT_LINE_WIDTH, 
+    label='Orca', marker='v', **marker_style)
     #plt.scatter(x_axis, sender_runtime_orca, marker='*', label='Orca non-contrained destination machines', color=color_orca, markersize=12)
 
     # plt.plot(x_axis, sender_runtime_orca_c, '--', color=color_orca_c)
@@ -737,7 +763,7 @@ def plot_scatter_workers(path):
     #ax.set_yticks(np.arange(min(sender_runtime_orca), max(sender_runtime_udp), 1000.0))
     #ax.yaxis.set_tick_params(labelsize=14)
     #ax.xaxis.set_tick_params(labelsize=14)
-    ax.set_ylabel('Running Time (ms)')
+    ax.set_ylabel('Comm. Time (ms)')
     ax.set_xlabel('# Receivers')
     ax.grid(True, which="both", ls="-", alpha=0.6)
     plt.legend(loc='best', fontsize=16)
@@ -748,12 +774,12 @@ def plot_scatter_workers(path):
     ax.get_yaxis().get_offset_text().set_visible(False)
     ax_max = max(ax.get_yticks())
     exponent_axis = np.floor(np.log10(ax_max)).astype(int)
-    ax.annotate(r'$\times$10$^{\mathregular{%i}}$'%(exponent_axis-1), xy=(.01, .98), xycoords='axes fraction', fontsize='xx-large', fontfamily='serif')
+    ax.annotate(r'$\times$10$^{\mathregular{%i}}$'%(exponent_axis-1), xy=(.01, .98), xycoords='axes fraction', fontsize=LEGEND_FONT_SIZE, fontfamily=FONT_FAMILY)
 
     sns.despine(ax=ax, top=True, right=True, left=False, bottom=False)
     plt.tight_layout()
 
-    plt.savefig('../app_runtime_scatter.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../app_runtime_scatter.pdf', ext='pdf', bbox_inches="tight")
     # plt.show(fig)
 
 def plot_send_cdf_size_based(path):
@@ -818,13 +844,17 @@ def plot_send_cdf_size_based(path):
 if __name__ == '__main__':
     path = sys.argv[1]
     print("Plotting Evaluations fom: " + path)
-    # for num_receivers in experiments_sizes:
-        # plot_app_times(path, num_receivers)
-    
-    # for i in range(len(workload_sizes)):
-    #     plot_cdf_both(path, 12, 1, 'log', i)
+    # Paper Plot
+    plot_app_times(path, 12)
+    plot_cdf_both(path, 12, 1, 'log', 4)
     plot_scatter_workers(path)
 
+    # for num_receivers in experiments_sizes:
+    #     plot_app_times(path, num_receivers)
+
+    # for i in range(len(workload_sizes)):
+    #     plot_cdf_both(path, 12, 1, 'log', i)
+    # plot_scatter_workers(path)
 
     # plot_egress_data(path, 'receivers')
     

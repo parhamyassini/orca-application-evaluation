@@ -9,27 +9,35 @@ import random
 import string
 from multiprocessing import Process, Queue, Value, Array
 import numpy as np
+from sciplot.bar import plot_n_bars
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import math
 import pandas as pd
 import seaborn as sns
+mpl.use('cairo')
+BAR_PLOT_TICKS = 6
 
 # Line Styles
-DEFAULT_LINE_WIDTH = 4
+DEFAULT_LINE_WIDTH = 8
 ALTERNATIVE_LINE_WIDTH = 5
-MEDIUM_LINE_WIDTH = 3
 SMALL_LINE_WIDTH = 2
 LINE_STYLES = ['-', '--', '-.', ':']
+# FONT_FAMILY = 'Times New Roman'
+FONT_FAMILY = 'Linux Libertine O'
 
 # Font
 TEX_ENABLED = False
 TICK_FONT_SIZE = 30
-AXIS_FONT_SIZE = 30
-LEGEND_FONT_SIZE = 22
+AXIS_FONT_SIZE = 32#24
+LEGEND_FONT_SIZE = 24
 CAP_SIZE = LEGEND_FONT_SIZE / 2
+AUTLABEL_FONT_SIZE = 22
 
-FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
+MARKER_STYLE = dict(markersize=TICK_FONT_SIZE, mew=2.5, mfc='w')
+
+# FONT_DICT = {'family': 'serif', 'serif': 'Times New Roman'}
+FONT_DICT = {'family': FONT_FAMILY}
 
 DEFAULT_RC = {'lines.linewidth': DEFAULT_LINE_WIDTH,
               'axes.labelsize': AXIS_FONT_SIZE,
@@ -86,6 +94,79 @@ plt.rc('ps', **{'fonttype': 42})
 plt.rc('legend', handlelength=1., handletextpad=0.1)
 
 fig, ax = plt.subplots()
+
+def plot_stacked_bar(data, series_labels, category_labels=None, 
+                     show_values=False, value_format="{}", x_label=None, 
+                     y_label=None, colors=None, grid=True, reverse=False):
+    """Plots a stacked bar chart with the data and labels provided.
+
+    Keyword arguments:
+    data            -- 2-dimensional numpy array or nested list
+                       containing data for each series in rows
+    series_labels   -- list of series labels (these appear in
+                       the legend)
+    category_labels -- list of category labels (these appear
+                       on the x-axis)
+    show_values     -- If True then numeric value labels will 
+                       be shown on each bar
+    value_format    -- Format string for numeric value labels
+                       (default is "{}")
+    y_label         -- Label for y-axis (str)
+    colors          -- List of color labels
+    grid            -- If True display grid
+    reverse         -- If True reverse the order that the
+                       series are displayed (left-to-right
+                       or right-to-left)
+    """
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('legend', handlelength=1., handletextpad=0.1)
+    fig, ax = plt.subplots()
+
+    ny = len(data[0])
+    ind = list(range(ny))
+
+    axes = []
+    cum_size = np.zeros(ny)
+
+    data = np.array(data)
+
+    if reverse:
+        data = np.flip(data, axis=1)
+        category_labels = reversed(category_labels)
+    hatches = ['xx', '//']
+    for i, row_data in enumerate(data):
+        color = colors[i] if colors is not None else None
+        axes.append(plt.bar(ind, row_data, width=0.4, bottom=cum_size, 
+                            label=series_labels[i], color=color, edgecolor='none'))
+        cum_size += row_data
+
+    if category_labels:
+        ax.set_xticks(ind)
+        ax.set_xticklabels(category_labels)
+
+    if y_label:
+        ax.set_ylabel(y_label)
+
+    if x_label:
+         ax.set_xlabel(x_label)
+    
+    ax.legend(loc='upper left')
+
+    if grid:
+        plt.grid()
+
+    if show_values:
+        for axis in axes:
+            for bar in axis:
+                w, h = bar.get_width(), bar.get_height()
+                plt.text(bar.get_x() + w/2, bar.get_y() + h/2, 
+                         value_format.format(h), ha="center", 
+                         va="center", fontsize=LEGEND_FONT_SIZE)
+    return ax
 
 def plot_throughput_normal(path):
     mean_list = []
@@ -144,11 +225,17 @@ def plot_throughput_normal(path):
 
 def plot_loss_percentage(path):
     sns.set_context(context='paper', rc=DEFAULT_RC)
-    plt.rc('text', usetex=TEX_ENABLED)
+    # sns.set_style(style='ticks')
+    plt.rc('font', **FONT_DICT)
     plt.rc('ps', **{'fonttype': 42})
-    mpl.rcParams["font.size"] = LEGEND_FONT_SIZE
-    #fig, ax = plt.subplots(figsize=(6.5, 4))
-    
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    # plt.rc('legend', handlelength=1., handletextpad=0.1)
+    # mpl.rcParams["font.size"] = LEGEND_FONT_SIZE
+    fig, ax = plt.subplots(figsize=(6.3, 4.2))
+    # fig, ax = plt.subplots()
+
     for size_index, size in enumerate(size_arr):
         loss_rate_arr = []
         for plot_idx, k in enumerate(k_arr):
@@ -205,26 +292,27 @@ def plot_loss_percentage(path):
             #print(plot_idx)
             loss_percentage = 100*(float((y_axis[min_throughput_index - 1] - y_axis[min_throughput_index]))/y_axis[min_throughput_index - 1])
             loss_rate_arr.append(loss_percentage)
-        plt.scatter(k_arr, loss_rate_arr,  color=color_pallete[size_index], marker=marker_list[size_index], s=64, label='Packet size = ' + str(size_arr[size_index]))
-        print (loss_rate_arr)
+        plt.scatter(k_arr, loss_rate_arr,  color=color_pallete[size_index], marker=marker_list[size_index], s=64, label='Pkt size=' + str(size_arr[size_index]))
+        print(loss_rate_arr)
         if size_index == len(size_arr) -1 :
             #plt.title('Loss rate for differnet packet sizes')
             #ax.set_xlabel('T (ms)')
-            ax.set_ylabel('Loss percentage (%)')
+            ax.set_xlabel('Heartbeat Timeout T (ms)')
+            ax.set_ylabel('Loss %')
             #ax.set_yticks(np.arange(0, 12, 1))
             ax.spines['right'].set_visible(False)
             ax.spines['top'].set_visible(False)
             #plt.legend(loc='best')
-            ax.set_yticks(loss_rate_arr)
+            ax.set_yticks([0, 1, 2, 3])
             ax.set_xticks(k_arr)
             # labels = [item.get_text() for item in ax.get_xticklabels()]
 
             # empty_string_labels = ['']*len(labels)
             # ax.set_xticklabels(empty_string_labels)
 
-            ax.grid(True, which="both", ls="--", alpha=0.6)
+            ax.grid(True, which='both', ls="--", alpha=0.6)
             plt.legend(loc='best')
-            plt.savefig('../loss_rates.eps', ext='eps', bbox_inches="tight")
+            plt.savefig('../loss_rates.pdf', ext='pdf', bbox_inches='tight')
             plt.show(fig)
 
 def plot_throughput_failure(path, size=1024, metric='bps', size_index=0, k=1):
@@ -300,8 +388,8 @@ def plot_throughput_failure(path, size=1024, metric='bps', size_index=0, k=1):
     
     centered_x = [int(item - (min_throughput_index - 2)) for item in x_axis[min_throughput_index-2:min_throughput_index+3]]
     centered_y = y_axis[min_throughput_index-2:min_throughput_index+3]
-    plt.plot(centered_x, centered_y, '-', color=color_pallete[size_index]) #, label=str(size) +'B')
-    print (centered_y)
+    plt.plot(centered_x, centered_y, '-', color=color_pallete[size_index], lw=1) #, label=str(size) +'B')
+    print(centered_y)
     print(centered_x)
     ax.annotate('Throughput drop: %.3f Gbps' % (y_axis[min_throughput_index - 2] - min_throughput),
         xy=(min_throughput_index - (min_throughput_index - 3), min_throughput), 
@@ -330,7 +418,7 @@ def plot_throughput_failure(path, size=1024, metric='bps', size_index=0, k=1):
     ticks = []
     plt.tight_layout()
     #plt.xticks([int(i/10) for i in range(0, len(x_axis), 10)])
-    plt.savefig('../throughput_size_' + str(size) + '_best.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../throughput_size_' + str(size) + '_best.pdf', ext='pdf', bbox_inches="tight")
     # plt.show(fig)
 
 def plot_cpu(path):
@@ -396,10 +484,10 @@ def plot_cdf_latency(path, exp='10g'):
     ticks = ['64', '128', '256', '512', '1024']
 
     def set_box_color(bp, color, hatch=None):
-        plt.setp(bp['boxes'], linewidth=1)
-        plt.setp(bp['whiskers'], linewidth=1)
-        plt.setp(bp['caps'], linewidth=1)
-        plt.setp(bp['medians'], color='black', linewidth=1)
+        plt.setp(bp['boxes'], linewidth=2)
+        plt.setp(bp['whiskers'], linewidth=2)
+        plt.setp(bp['caps'], linewidth=2)
+        plt.setp(bp['medians'], color='black', linewidth=2)
         for patch in bp['boxes']:
             patch.set_facecolor(color)
             if hatch:
@@ -420,7 +508,7 @@ def plot_cdf_latency(path, exp='10g'):
     fig, ax = plt.subplots()
     bpl = plt.boxplot(data_orca, patch_artist=True, positions=np.array(range(len(data_orca)))*2.0-0.3, sym='')
     bpr = plt.boxplot(data_normal, patch_artist=True, positions=np.array(range(len(data_normal)))*2.0+0.3, sym='')
-    set_box_color(bpl, color_pallete[0], hatch='xx') # colors are from http://colorbrewer2.org/
+    set_box_color(bpl, color_pallete[0], hatch='\\\\') # colors are from http://colorbrewer2.org/
     set_box_color(bpr, color_pallete[1], hatch='//')
 
     # draw temporary red and blue lines and use them to create a legend
@@ -442,7 +530,7 @@ def plot_cdf_latency(path, exp='10g'):
     ax.set_ylabel('Packet Latency (%ss)' % r'$\mu$')
     ax.yaxis.grid(True)
     plt.tight_layout()
-    plt.savefig('../latency_' + str(exp) + '.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../latency_' + str(exp) + '.pdf', ext='pdf', bbox_inches="tight")
     # plt.show()
 
 
@@ -472,11 +560,11 @@ def plot_agent_load():
     # plt.rc('ps', **{'fonttype': 42})
     #plt.rc('legend', handlelength=1., handletextpad=0.1)
     fig, ax = plt.subplots()
-    plt.plot(x_axis, throughput_1024, label='Pkt Size=1024B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_512, label='Pkt Size=512B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_256, label='Pkt Size=256B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_128, label='Pkt Size=128B', marker='.', markersize=TICK_FONT_SIZE)
-    plt.plot(x_axis, throughput_64, label='Pkt Size=64B', marker='.', markersize=TICK_FONT_SIZE)
+    plt.plot(x_axis, throughput_1024, label='Pkt Size=1024B', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, throughput_512, label='Pkt Size=512B', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, throughput_256, label='Pkt Size=256B', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, throughput_128, label='Pkt Size=128B', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, throughput_64, label='Pkt Size=64B', marker='.', **MARKER_STYLE)
     ax.set_xlabel('# CPU Cores')
     ax.set_ylabel('Throughput (Gbps)')
 
@@ -487,7 +575,42 @@ def plot_agent_load():
     ax.grid(True, which="both", ls="--", alpha=0.6)
     plt.legend(loc='best')
     plt.tight_layout()
-    plt.savefig('../agent_load.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../agent_load.pdf', ext='pdf', bbox_inches="tight")
+    # plt.show()
+
+def plot_cpu_cycles_latest():
+    # Manually extracted!
+    active_sessions = ['100K', '200K', '300K', '400K', '500K']
+    x_axis = [1, 2, 3, 4, 5]
+    cpu_avg = [375, 435, 456, 478, 497]
+    cpu_50p = [375, 400, 410, 435, 455]
+    cpu_95p = [560, 650, 695, 745, 790]
+    cpu_99p = [1750, 1815, 1865, 1900, 1940]
+
+    sns.set_context(context='paper', rc=DEFAULT_RC)
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'default': 'regular'})
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('legend', handlelength=1., handletextpad=0.25)
+
+    fig, ax = plt.subplots()
+    plt.plot(x_axis, cpu_avg, label='Avg.', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, cpu_50p, label='$50^{th}$', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, cpu_95p, label='$95^{th}$', marker='.', **MARKER_STYLE)
+    plt.plot(x_axis, cpu_99p, label='$99.99^{th}$', marker='.', **MARKER_STYLE)
+    ax.set_xlabel('# Active Sessions')
+    ax.set_ylabel('# Cycles/packet')
+
+    ax.set_yticks(np.arange(0, 2400, 400))
+    plt.xticks(x_axis, labels=active_sessions)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.grid(True, which="both", ls="--", alpha=0.6)
+    plt.legend(loc='best')
+    plt.tight_layout()
+    plt.savefig('../cpu_cycles.pdf', ext='pdf', bbox_inches='tight')
     # plt.show()
 
 def plot_failover_delay(mode='bar'):
@@ -533,9 +656,21 @@ def plot_failover_delay(mode='bar'):
     # plt.rc('ps', **{'fonttype': 42})
     #plt.rc('legend', handlelength=1., handletextpad=0.1)
     
+    def set_box_color(bp, color, hatch=None):
+        print(bp)
+        plt.setp(bp['boxes'], linewidth=2)
+        plt.setp(bp['whiskers'], linewidth=2)
+        plt.setp(bp['caps'], linewidth=2)
+        plt.setp(bp['medians'], color='black', linewidth=2)
+        for patch in bp['boxes']:
+            patch.set_facecolor(color)
+            if hatch:
+                patch.set_hatch(hatch)
+
     fig, ax = plt.subplots()
     if mode == 'bar':
-        ax.bar(x_axis, y_axis, ecolor='black', capsize=6, color=color_pallete[1], edgecolor='none', yerr=y_std, width=2, zorder=3)
+        ax.bar(x_axis, y_axis, color=color_pallete[1], edgecolor='none', 
+        yerr=y_std, width=2, zorder=3, error_kw=dict(ecolor='black', elinewidth=2, capsize=3))
     elif mode == 'line':
         ax.plot(x_axis, y_axis, color=color_pallete[1], marker='o', markersize=LEGEND_FONT_SIZE, zorder=2)
         ax.plot(x_axis, x_axis, '--', color='#FF0000', linewidth=DEFAULT_LINE_WIDTH, zorder=3)
@@ -554,29 +689,213 @@ def plot_failover_delay(mode='bar'):
     # plt.savefig('../failover_delay.eps', ext='eps', bbox_inches="tight")
     # plt.show()
     plt.tight_layout()
-    plt.savefig('../failover_delay_' + mode + '.eps', ext='eps', bbox_inches="tight")
+    plt.savefig('../failover_delay_' + mode + '.pdf', ext='pdf', bbox_inches="tight")
+
+
+def plot_cpu_cycles(mode='bar'):
+    # Extracted from google sheet calculations
+
+    # mean_cycles = [375, 435, 456, 478, 497]
+    # percentile_99_cycles = [1440, 1555, 1590, 1625, 1650]
+    # min_cycles = [40, 40, 40, 40, 40]
+
+    # x_axis_labels = ['100K', '200K', '300K', '400K', '500K']
+    
+
+    mean_cycles = [379, 384, 375]
+    percentile_99_cycles = [410 , 430, 1440]
+    min_cycles = [40, 40, 40, ]
+    x_axis_labels = ['10K', '50K', '100K']
+    x_axis = np.arange(len(x_axis_labels))
+    # sns.set_style(style='ticks')
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    # plt.rc('legend', handlelength=1., handletextpad=0.1)
+    fig, ax = plt.subplots()
+    # sns.set_context(context='paper', rc=DEFAULT_RC)
+    #sns.set_style(style='ticks')
+    # plt.rc('text', usetex=TEX_ENABLED)
+    # plt.rc('ps', **{'fonttype': 42})
+    #plt.rc('legend', handlelength=1., handletextpad=0.1)
+    
+    y_axis = mean_cycles
+    y_err = np.array((np.subtract(mean_cycles, min_cycles), np.subtract(percentile_99_cycles, mean_cycles)))
+    
+    if mode == 'bar':
+        ax.bar(x_axis, y_axis, ecolor='black', capsize=CAP_SIZE, color=color_pallete[1], yerr=y_err)
+    elif mode == 'line':
+        ax.plot(x_axis, y_axis, color=color_pallete[1], marker='o', markersize=LEGEND_FONT_SIZE, zorder=2)
+        ax.plot(x_axis, x_axis, '--', color='#FF0000', linewidth=DEFAULT_LINE_WIDTH, zorder=3)
+    ax.set_xlabel('# Active Sessions in Rack ')
+    ax.set_ylabel('CPU Usage (cycles/packet)')
+    
+    ax.set_xticks(x_axis)
+    ax.set_xticklabels(x_axis_labels)
+    
+    print (y_axis)
+    print (x_axis)
+    ax.grid(True, which="both", ls="--", alpha=0.6, zorder=0)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig('../cpu_cycles_' + mode + '.pdf', ext='pdf', bbox_inches="tight")
     # plt.show()
 
 
+def plot_controller_latency_bar(path):
+    means = []
+    file_name = path + '/join_delay.csv'
+    # From ping results
+    avg_rtt = [0.479, 0.689, 0.856, 1.125]
+
+    category_labels = ['P1', 'P2', 'P3', 'P4']
+    series_labels = ['Netowrk delay', 'Control plane delay']
+    for i in range(7):
+        if (i %2) != 0:
+            continue
+        latency = []
+        with open(file_name) as csvfile:
+            results = csv.reader(csvfile, delimiter=',')
+            for idx, row in enumerate(results):
+                if idx == 0:
+                    continue
+                try:
+                    latency.append(float(row[i]))
+                except:
+                    continue
+        means.append(np.mean(latency))
+    data = np.array((avg_rtt, np.subtract(means,avg_rtt)))
+    
+    ax1 = plot_stacked_bar(
+        data,
+        series_labels, 
+        category_labels=category_labels, 
+        show_values=True, 
+        value_format="{:.2f}",
+        colors=color_pallete,
+        y_label="Join Delay (ms)",
+        x_label="Controller Placement"
+    )
+    ax1.set_ylim(0, 5)
+    ax1.set_yticks([0, 1, 2, 3, 4, 5])
+    sns.despine(top=True, right=True, left=False, bottom=False)
+    plt.tight_layout()
+    plt.savefig('../join_latency_stacked_bar.pdf', ext='pdf', bbox_inches="tight")
+    # plt.show()
+    
+def plot_controller_throughput(path):
+    file_name = path + '/controller_throuput.csv'
+    avg_rtt = [0.437, 0.650, 0.880, 1.135]
+    category_labels = ['P1', 'P2', 'P3', 'P4']
+    mean_list = []
+    err_list = []
+    plt.rc('font', **FONT_DICT)
+    plt.rc('ps', **{'fonttype': 42})
+    plt.rc('pdf', **{'fonttype': 42})
+    plt.rc('mathtext', **{'fontset': 'cm'})
+    plt.rc('ps', **{'fonttype': 42})
+    fig, ax = plt.subplots()
+    for i in range(7): # Results contain 0.1ms steps, plot 0.2ms steps to be consistent with P1-P4 in paper
+        if (i %2) != 0:
+            continue
+        throughput_list = []
+        with open(file_name) as csvfile:
+            results = csv.reader(csvfile, delimiter=',')
+            for idx, row in enumerate(results):
+                try:
+                    throughput_list.append(int(row[i]))
+                except:
+                    continue
+        mean_list.append(np.mean(throughput_list))
+        err_list.append(np.std(throughput_list))
+    print (err_list)
+    ind = np.arange(0, len(category_labels))
+    print(ind)
+    ax.set_xticks(ind)
+    ax.set_ylabel('# Events/sec')
+    ax.set_xticklabels(category_labels)
+    ax.set_xlabel('Controller Placement')
+    custom_ticks = np.linspace(0, 1250, 6, dtype=int)
+    ax.set_yticks(custom_ticks)
+    ax.set_yticklabels(custom_ticks)
+    ax.bar(ind, mean_list, yerr=err_list, align='center', zorder=3, color=color_pallete[1], width=0.4, 
+    error_kw=dict(ecolor='black', elinewidth=2, capsize=3))
+    ax.grid(zorder=0)
+    ax.yaxis.grid(True)
+    ax.xaxis.grid(False)
+    sns.despine(top=True, right=True, left=False, bottom=False)
+    plt.tight_layout()
+    plt.savefig('../controller_throughput.pdf', ext='pdf', bbox_inches="tight")
+    # plt.show()
+
+def plot_spine_throughput():
+    TX_PKT_RATE_SESSIONS_9 = {
+    '64': [14.19, 14.19, 14.2, 14.19, 14.19],
+    '128': [8.22, 8.22, 8.22, 8.22, 8.22],
+    '256': [4.46, 4.46, 4.46, 4.46, 4.46],
+    '512': [2.33, 2.33, 2.33, 2.33, 2.33],
+    '1024': [1.19, 1.19, 1.19, 1.19, 1.19],
+    }
+
+    RX_PKT_RATE_SESSIONS_9 = {
+        '64': [14.19, 14.19, 14.2, 14.19, 14.19],
+        '128': [8.22, 8.22, 8.22, 8.22, 8.22],
+        '256': [4.46, 4.46, 4.46, 4.46, 4.46],
+        '512': [2.33, 2.33, 2.33, 2.33, 2.33],
+        '1024': [1.19, 1.19, 1.19, 1.19, 1.19],
+    }
+
+    RX_RATE_SESSIONS_9 = {
+        '64': [9992, 9992, 9994, 9993, 9992],
+        '128': [9993, 9993, 9993, 9993, 9993],
+        '256': [9994, 9992, 9993, 9993, 9993],
+        '512': [9993, 9992, 9993, 9994, 9993],
+        '1024': [9999, 9997, 9994, 9992, 9992],
+    }
+
+    tx_pkt_rate_SESSIONS_9 = [sum(tx_list) / float(len(tx_list)) for k, tx_list in TX_PKT_RATE_SESSIONS_9.items()]
+    rx_pkt_rate_SESSIONS_9 = [sum(rx_list) / float(len(rx_list)) for k, rx_list in RX_PKT_RATE_SESSIONS_9.items()]
+    rx_rate_gbps_SESSIONS_9 = [sum(rx_list) / float(len(rx_list)) / 1000. for k, rx_list in RX_RATE_SESSIONS_9.items()]
+
+    plot_n_bars([tx_pkt_rate_SESSIONS_9, rx_pkt_rate_SESSIONS_9, rx_pkt_rate_SESSIONS_9],
+            labels=['Tx', 'Rx1', 'Rx2'],
+            legend_top=False,
+            hatch=True,
+            legend_bbox=(0.8, 0.7, 0.2, 0.2),
+            xaxis_label='Packet Size (Bytes)',
+            yaxis_label='# Pkts/sec (Millions)',
+            xticks=[str(_b) for _b in TX_PKT_RATE_SESSIONS_9.keys()],
+            y_lim=[0, 16],
+            x_grid=False,
+            y_grid=True,
+            name='../spine_throughput.pdf'
+            )
 
 if __name__ == '__main__':
     path = sys.argv[1]
     print("Plotting Evaluations fom: " + path)
-    # Paper
-    # plot_loss_percentage(path)
-    # Paper
-    # plot_failover_delay(mode='bar')
-    # Paper
-    # plot_throughput_normal(path)
-    # Paper
-    # plot_agent_load()
+    # import matplotlib.font_manager as font_manager
+    # for font in font_manager.findSystemFonts():
+    #     print(font)
 
-    # latency results in a different path
     # Paper
+    # plot_controller_latency_bar(path)
+    # plot_controller_throughput(path)
+    # plot_failover_delay(mode='bar')
+    # plot_agent_load()
     # plot_cdf_latency(path, 'inc')
+    # plot_spine_throughput()
+    # plot_loss_percentage(path)
+    plot_cpu_cycles_latest()
     
-    #plot_throughput_failure(path, size=size_arr[0], size_index=0, k=1) # 64B k=1ms
-    # Paper
-    plot_throughput_failure(path, size=size_arr[4], size_index=1, k=1) # 1024B k=1ms
-    # Paper
+    # Paper (Supplementary)
+    # plot_throughput_normal(path)
+    # plot_throughput_failure(path, size=size_arr[0], size_index=0, k=1) # 64B k=1ms
+    # plot_throughput_failure(path, size=size_arr[4], size_index=1, k=1) # 1024B k=1ms
+    
+    # Don't use (for now)
     # plot_cpu(path)
+    # plot_cpu_cycles(mode='bar')
