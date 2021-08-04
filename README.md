@@ -294,7 +294,7 @@ python deploy.py <username> run_receivers <number of instances> <"client args">
 * method: it can be either "udp" or "orca".
 * workload_files_list: name of the file containing the list of the files and sizes to be received. Example: "broadcast_files_n.txt" where n can be from 0 to 4.
 > These files are pre-generated to make the client aware of file size that should be received (for simplicity). See next section for adding custome workloads.
-* total_runs: This argument specifies the anticipated rounds for experiment. The results file generated will contain average time of these experiments.
+* total_runs: This argument specifies the number of times the experiment is repeated. The results file generated will contain average time of the repeated experiments.
 
  Examples:
 ```
